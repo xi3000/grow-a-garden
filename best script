@@ -1,114 +1,104 @@
 local Players = game:GetService("Players")
-local Lighting = game:GetService("Lighting")
 local TweenService = game:GetService("TweenService")
 local SoundService = game:GetService("SoundService")
-local RunService = game:GetService("RunService")
+
 local LocalPlayer = Players.LocalPlayer
 
--- Làm mờ nền (blur) để dùng sau
-local blur = Instance.new("BlurEffect")
-blur.Size = 0
-blur.Parent = Lighting
+-- Tạo Flash trắng fullscreen
+local function CreateFlash()
+    local flash = Instance.new("Frame")
+    flash.Name = "Flash"
+    flash.BackgroundColor3 = Color3.new(1,1,1)
+    flash.Size = UDim2.new(1,0,1,0)
+    flash.Position = UDim2.new(0,0,0,0)
+    flash.BackgroundTransparency = 1
+    flash.ZIndex = 1000 -- Hiển thị trên cùng
+    flash.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- GUI setup
-local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
-gui.Name = "JumpScareAndFakeBanUI"
-gui.IgnoreGuiInset = true
-gui.ResetOnSpawn = false
+    -- Tween flash từ trong suốt -> trắng -> trong suốt để chớp
+    local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, 2, true)
+    local tween = TweenService:Create(flash, tweenInfo, {BackgroundTransparency = 0})
+    tween:Play()
+    tween.Completed:Connect(function()
+        flash:Destroy()
+    end)
+end
 
--- Tạo frame full màn hình để flash trắng đen (jump scare)
-local flashFrame = Instance.new("Frame", gui)
-flashFrame.Size = UDim2.new(1, 0, 1, 0)
-flashFrame.BackgroundColor3 = Color3.new(1,1,1)
-flashFrame.BackgroundTransparency = 0
+-- Phát âm thanh jump scare
+local function PlayJumpScareSound()
+    local sound = Instance.new("Sound")
+    -- Bạn có thể đổi ID này bằng âm thanh khác nếu muốn
+    sound.SoundId = "rbxassetid://911882141"
+    sound.Volume = 1
+    sound.Parent = workspace
+    sound:Play()
+    sound.Ended:Connect(function()
+        sound:Destroy()
+    end)
+end
 
--- Tạo sound ồn ào jump scare (cần bạn có link sound, hoặc dùng âm thanh mặc định)
-local screamSound = Instance.new("Sound", gui)
-screamSound.SoundId = "rbxassetid://1843528457" -- Ví dụ tiếng la hét ghê rợn, bạn có thể đổi ID
-screamSound.Volume = 1
-screamSound.Looped = true
+-- Tạo giao diện Fake Ban UI
+local function CreateFakeBanUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "FakeBanUI"
+    screenGui.IgnoreGuiInset = true
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- Hàm flash trắng đen trong 5s
-local flashDuration = 5
-local flashInterval = 0.15
-local elapsed = 0
-local flashOn = false
+    local bg = Instance.new("Frame", screenGui)
+    bg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    bg.Size = UDim2.new(0, 400, 0, 150)
+    bg.Position = UDim2.new(0.5, -200, 0.5, -75)
+    bg.BorderSizePixel = 0
+    bg.AnchorPoint = Vector2.new(0.5, 0.5)
+    bg.ClipsDescendants = true
+    bg.BackgroundTransparency = 0
 
-screamSound:Play()
-
-local flashConnection
-flashConnection = RunService.Heartbeat:Connect(function(dt)
-    elapsed = elapsed + dt
-    if elapsed >= flashDuration then
-        flashConnection:Disconnect()
-        screamSound:Stop()
-        flashFrame:Destroy()
-        StartFakeBanUI()
-        return
-    end
-
-    -- Chớp trắng đen
-    flashOn = not flashOn
-    if flashOn then
-        flashFrame.BackgroundColor3 = Color3.new(1,1,1) -- trắng
-    else
-        flashFrame.BackgroundColor3 = Color3.new(0,0,0) -- đen
-    end
-end)
-
--- Hàm hiện fake ban UI (từ code cũ của bạn)
-function StartFakeBanUI()
-    -- Kích blur lên dần
-    TweenService:Create(blur, TweenInfo.new(0.5), {Size = 24}):Play()
-
-    local darkBg = Instance.new("Frame", gui)
-    darkBg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    darkBg.Size = UDim2.new(1, 0, 1, 0)
-    darkBg.BackgroundTransparency = 1
-    TweenService:Create(darkBg, TweenInfo.new(0.5), {BackgroundTransparency = 0.5}):Play()
-
-    local box = Instance.new("Frame", darkBg)
-    box.AnchorPoint = Vector2.new(0.5, 0.5)
-    box.Position = UDim2.new(0.5, 0, 0.5, 0)
-    box.Size = UDim2.new(0, 370, 0, 170)
-    box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    box.BorderSizePixel = 0
-    box.BackgroundTransparency = 0
-
-    local title = Instance.new("TextLabel", box)
+    local title = Instance.new("TextLabel", bg)
     title.Text = "Disconnected"
-    title.Size = UDim2.new(1, 0, 0.25, 0)
-    title.Position = UDim2.new(0, 0, 0, 0)
+    title.Size = UDim2.new(1, -20, 0, 30)
+    title.Position = UDim2.new(0, 10, 0, 10)
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.TextScaled = true
-    title.Font = Enum.Font.SourceSansBold
+    title.TextScaled = false
+    title.Font = Enum.Font.GothamBold
+    title.TextXAlignment = Enum.TextXAlignment.Left
     title.BackgroundTransparency = 1
 
-    local line = Instance.new("Frame", box)
-    line.Size = UDim2.new(1, -20, 0, 1)
-    line.Position = UDim2.new(0, 10, 0.22, 0)
-    line.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+    local line = Instance.new("Frame", bg)
+    line.Size = UDim2.new(1, -40, 0, 1)
+    line.Position = UDim2.new(0, 20, 0, 45)
+    line.BackgroundColor3 = Color3.fromRGB(128, 128, 128)
+    line.BorderSizePixel = 0
 
-    local message = Instance.new("TextLabel", box)
-    message.Text = "You were kicked from this experience:\nYou are permanently banned.\n(Error Code: 267)"
-    message.Size = UDim2.new(0.9, 0, 0.45, 0)
-    message.Position = UDim2.new(0.05, 0.3, 0)
-    message.TextColor3 = Color3.fromRGB(230, 230, 230)
-    message.TextScaled = true
-    message.Font = Enum.Font.SourceSans
+    local message = Instance.new("TextLabel", bg)
+    message.Text = "You were kicked from this experience: You have been permanently banned (legacy ban system) (iir:false, ibdih:false)\n(Error Code: 267)"
+    message.Size = UDim2.new(1, -40, 0, 60)
+    message.Position = UDim2.new(0, 20, 0, 50)
+    message.TextColor3 = Color3.fromRGB(200, 200, 200)
+    message.TextScaled = false
+    message.Font = Enum.Font.Gotham
     message.TextWrapped = true
+    message.TextXAlignment = Enum.TextXAlignment.Left
     message.BackgroundTransparency = 1
 
-    local button = Instance.new("TextButton", box)
+    local button = Instance.new("TextButton", bg)
     button.Text = "Leave"
-    button.Size = UDim2.new(0, 150, 0, 40)
-    button.Position = UDim2.new(0.5, -75, 0.8, 0)
+    button.Size = UDim2.new(0, 360, 0, 40)
+    button.Position = UDim2.new(0, 20, 1, -50)
     button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     button.TextColor3 = Color3.fromRGB(0, 0, 0)
+    button.Font = Enum.Font.GothamBold
     button.TextScaled = true
-    button.Font = Enum.Font.SourceSansBold
+    button.BorderSizePixel = 0
+    button.AutoButtonColor = true
 
     button.MouseButton1Click:Connect(function()
         game:Shutdown()
     end)
 end
+
+-- Chạy hiệu ứng flash và âm thanh jump scare trước khi tạo UI ban
+CreateFlash()
+PlayJumpScareSound()
+wait(0.2) -- đợi flash + âm thanh 1 chút rồi hiện UI
+CreateFakeBanUI()
