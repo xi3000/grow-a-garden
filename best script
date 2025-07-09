@@ -1,78 +1,99 @@
--- Advanced Fake Ban Script (Client-side only)
-
+-- LocalScript ONLY: Jump scare + flash + fake ban
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 
--- ✅ Create Fake Ban GUI
-local function showFakeBan(reason)
-	local ScreenGui = Instance.new("ScreenGui")
-	local Frame = Instance.new("Frame")
-	local Title = Instance.new("TextLabel")
-	local Reason = Instance.new("TextLabel")
-	local Close = Instance.new("TextButton")
+-- 💀 Add blur
+local blur = Instance.new("BlurEffect")
+blur.Size = 25
+blur.Parent = Lighting
 
-	ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-	ScreenGui.Name = "FakeBanUI"
+-- 🔊 Scream Sound
+local screamSound = Instance.new("Sound", workspace)
+screamSound.SoundId = "rbxassetid://138186576" -- Loud scream
+screamSound.Volume = 10
+screamSound:Play()
 
-	Frame.Parent = ScreenGui
-	Frame.Size = UDim2.new(0.5, 0, 0.3, 0)
-	Frame.Position = UDim2.new(0.25, 0, 0.35, 0)
-	Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-	Frame.BorderSizePixel = 2
+-- 👻 Flash Effect
+local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+gui.Name = "ShockEffect"
+gui.IgnoreGuiInset = true
+gui.ResetOnSpawn = false
 
-	Title.Parent = Frame
-	Title.Text = "⚠️ You have been BANNED"
-	Title.Size = UDim2.new(1, 0, 0.3, 0)
-	Title.TextColor3 = Color3.fromRGB(255, 70, 70)
-	Title.TextScaled = true
-	Title.BackgroundTransparency = 1
-	Title.Font = Enum.Font.GothamBold
+local flashFrame = Instance.new("Frame", gui)
+flashFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+flashFrame.Size = UDim2.new(1, 0, 1, 0)
+flashFrame.BackgroundTransparency = 1
 
-	Reason.Parent = Frame
-	Reason.Text = "Reason: " .. reason .. "\nIf you believe this is a mistake, please contact support."
-	Reason.Size = UDim2.new(1, 0, 0.5, 0)
-	Reason.Position = UDim2.new(0, 0, 0.3, 0)
-	Reason.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Reason.TextWrapped = true
-	Reason.TextScaled = true
-	Reason.Font = Enum.Font.Gotham
+-- ⚡ Flashing loop (black-white flicker)
+task.spawn(function()
+	for i = 1, 10 do
+		flashFrame.BackgroundColor3 = (i % 2 == 0) and Color3.new(0,0,0) or Color3.new(1,1,1)
+		flashFrame.BackgroundTransparency = 0
+		wait(0.07)
+		flashFrame.BackgroundTransparency = 1
+	end
+end)
 
-	Close.Parent = Frame
-	Close.Text = "Exit Game"
-	Close.Size = UDim2.new(0.4, 0, 0.2, 0)
-	Close.Position = UDim2.new(0.3, 0, 0.8, 0)
-	Close.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-	Close.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Close.Font = Enum.Font.GothamBold
-	Close.TextScaled = true
+-- Delay 3s → show fake ban
+task.delay(3, function()
+	gui:Destroy() -- remove flash
+	screamSound:Stop()
 
-	Close.MouseButton1Click:Connect(function()
-		game:Shutdown() -- Fake shutdown to make it look real
+	-- 👮‍♂️ FAKE BAN GUI
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "FakeBanUI"
+	screenGui.IgnoreGuiInset = true
+	screenGui.ResetOnSpawn = false
+	screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+	local bg = Instance.new("Frame", screenGui)
+	bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	bg.Size = UDim2.new(1, 0, 1, 0)
+	bg.BackgroundTransparency = 1
+	TweenService:Create(bg, TweenInfo.new(0.5), {BackgroundTransparency = 0.5}):Play()
+
+	local box = Instance.new("Frame", bg)
+	box.AnchorPoint = Vector2.new(0.5, 0.5)
+	box.Position = UDim2.new(0.5, 0, 0.5, 0)
+	box.Size = UDim2.new(0, 400, 0, 180)
+	box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	box.BorderSizePixel = 0
+
+	local title = Instance.new("TextLabel", box)
+	title.Text = "Disconnected"
+	title.Size = UDim2.new(1, 0, 0.25, 0)
+	title.TextColor3 = Color3.fromRGB(255, 255, 255)
+	title.TextScaled = true
+	title.Font = Enum.Font.SourceSansBold
+	title.BackgroundTransparency = 1
+
+	local line = Instance.new("Frame", box)
+	line.Size = UDim2.new(1, -20, 0, 1)
+	line.Position = UDim2.new(0, 10, 0.22, 0)
+	line.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+
+	local message = Instance.new("TextLabel", box)
+	message.Text = "You were kicked from this experience:\nYou are permanently banned.\n(Error Code: 267)"
+	message.Size = UDim2.new(0.9, 0, 0.4, 0)
+	message.Position = UDim2.new(0.05, 0.3, 0)
+	message.TextColor3 = Color3.fromRGB(230, 230, 230)
+	message.TextScaled = true
+	message.TextWrapped = true
+	message.Font = Enum.Font.SourceSans
+	message.BackgroundTransparency = 1
+
+	local button = Instance.new("TextButton", box)
+	button.Text = "Leave"
+	button.Size = UDim2.new(0, 150, 0, 40)
+	button.Position = UDim2.new(0.5, -75, 0.8, 0)
+	button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	button.TextColor3 = Color3.fromRGB(0, 0, 0)
+	button.TextScaled = true
+	button.Font = Enum.Font.SourceSansBold
+
+	button.MouseButton1Click:Connect(function()
+		game:Shutdown()
 	end)
-end
-
--- ✅ Detect suspicious environment or exploit tools
-local suspicious = false
-
--- Detect exploit tools (basic check)
-if identifyexecutor or is_sirhurt_closure or is_synapse_function then
-	suspicious = true
-end
-
--- Detect Roblox Studio or unloaded game
-if RunService:IsStudio() or not game:IsLoaded() then
-	suspicious = true
-end
-
--- Fake emulator or unofficial platform detection
-local platform = UserSettings():GetService("UserGameSettings").ComputerCameraMovementMode
-if typeof(platform) ~= "EnumItem" then
-	suspicious = true
-end
-
--- If suspicious environment is detected → show fake ban
-if suspicious then
-	task.wait(3) -- Delay for effect
-	showFakeBan("Unauthorized environment detected (Modded/Exploit/UWP)")
-end
+end)
