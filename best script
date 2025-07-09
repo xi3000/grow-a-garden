@@ -1,99 +1,114 @@
--- LocalScript ONLY: Jump scare + flash + fake ban
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
+local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
--- 💀 Add blur
+-- Làm mờ nền (blur) để dùng sau
 local blur = Instance.new("BlurEffect")
-blur.Size = 25
+blur.Size = 0
 blur.Parent = Lighting
 
--- 🔊 Scream Sound
-local screamSound = Instance.new("Sound", workspace)
-screamSound.SoundId = "rbxassetid://138186576" -- Loud scream
-screamSound.Volume = 10
-screamSound:Play()
-
--- 👻 Flash Effect
+-- GUI setup
 local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
-gui.Name = "ShockEffect"
+gui.Name = "JumpScareAndFakeBanUI"
 gui.IgnoreGuiInset = true
 gui.ResetOnSpawn = false
 
+-- Tạo frame full màn hình để flash trắng đen (jump scare)
 local flashFrame = Instance.new("Frame", gui)
-flashFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 flashFrame.Size = UDim2.new(1, 0, 1, 0)
-flashFrame.BackgroundTransparency = 1
+flashFrame.BackgroundColor3 = Color3.new(1,1,1)
+flashFrame.BackgroundTransparency = 0
 
--- ⚡ Flashing loop (black-white flicker)
-task.spawn(function()
-	for i = 1, 10 do
-		flashFrame.BackgroundColor3 = (i % 2 == 0) and Color3.new(0,0,0) or Color3.new(1,1,1)
-		flashFrame.BackgroundTransparency = 0
-		wait(0.07)
-		flashFrame.BackgroundTransparency = 1
-	end
+-- Tạo sound ồn ào jump scare (cần bạn có link sound, hoặc dùng âm thanh mặc định)
+local screamSound = Instance.new("Sound", gui)
+screamSound.SoundId = "rbxassetid://1843528457" -- Ví dụ tiếng la hét ghê rợn, bạn có thể đổi ID
+screamSound.Volume = 1
+screamSound.Looped = true
+
+-- Hàm flash trắng đen trong 5s
+local flashDuration = 5
+local flashInterval = 0.15
+local elapsed = 0
+local flashOn = false
+
+screamSound:Play()
+
+local flashConnection
+flashConnection = RunService.Heartbeat:Connect(function(dt)
+    elapsed = elapsed + dt
+    if elapsed >= flashDuration then
+        flashConnection:Disconnect()
+        screamSound:Stop()
+        flashFrame:Destroy()
+        StartFakeBanUI()
+        return
+    end
+
+    -- Chớp trắng đen
+    flashOn = not flashOn
+    if flashOn then
+        flashFrame.BackgroundColor3 = Color3.new(1,1,1) -- trắng
+    else
+        flashFrame.BackgroundColor3 = Color3.new(0,0,0) -- đen
+    end
 end)
 
--- Delay 3s → show fake ban
-task.delay(3, function()
-	gui:Destroy() -- remove flash
-	screamSound:Stop()
+-- Hàm hiện fake ban UI (từ code cũ của bạn)
+function StartFakeBanUI()
+    -- Kích blur lên dần
+    TweenService:Create(blur, TweenInfo.new(0.5), {Size = 24}):Play()
 
-	-- 👮‍♂️ FAKE BAN GUI
-	local screenGui = Instance.new("ScreenGui")
-	screenGui.Name = "FakeBanUI"
-	screenGui.IgnoreGuiInset = true
-	screenGui.ResetOnSpawn = false
-	screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    local darkBg = Instance.new("Frame", gui)
+    darkBg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    darkBg.Size = UDim2.new(1, 0, 1, 0)
+    darkBg.BackgroundTransparency = 1
+    TweenService:Create(darkBg, TweenInfo.new(0.5), {BackgroundTransparency = 0.5}):Play()
 
-	local bg = Instance.new("Frame", screenGui)
-	bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	bg.Size = UDim2.new(1, 0, 1, 0)
-	bg.BackgroundTransparency = 1
-	TweenService:Create(bg, TweenInfo.new(0.5), {BackgroundTransparency = 0.5}):Play()
+    local box = Instance.new("Frame", darkBg)
+    box.AnchorPoint = Vector2.new(0.5, 0.5)
+    box.Position = UDim2.new(0.5, 0, 0.5, 0)
+    box.Size = UDim2.new(0, 370, 0, 170)
+    box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    box.BorderSizePixel = 0
+    box.BackgroundTransparency = 0
 
-	local box = Instance.new("Frame", bg)
-	box.AnchorPoint = Vector2.new(0.5, 0.5)
-	box.Position = UDim2.new(0.5, 0, 0.5, 0)
-	box.Size = UDim2.new(0, 400, 0, 180)
-	box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-	box.BorderSizePixel = 0
+    local title = Instance.new("TextLabel", box)
+    title.Text = "Disconnected"
+    title.Size = UDim2.new(1, 0, 0.25, 0)
+    title.Position = UDim2.new(0, 0, 0, 0)
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.TextScaled = true
+    title.Font = Enum.Font.SourceSansBold
+    title.BackgroundTransparency = 1
 
-	local title = Instance.new("TextLabel", box)
-	title.Text = "Disconnected"
-	title.Size = UDim2.new(1, 0, 0.25, 0)
-	title.TextColor3 = Color3.fromRGB(255, 255, 255)
-	title.TextScaled = true
-	title.Font = Enum.Font.SourceSansBold
-	title.BackgroundTransparency = 1
+    local line = Instance.new("Frame", box)
+    line.Size = UDim2.new(1, -20, 0, 1)
+    line.Position = UDim2.new(0, 10, 0.22, 0)
+    line.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
 
-	local line = Instance.new("Frame", box)
-	line.Size = UDim2.new(1, -20, 0, 1)
-	line.Position = UDim2.new(0, 10, 0.22, 0)
-	line.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+    local message = Instance.new("TextLabel", box)
+    message.Text = "You were kicked from this experience:\nYou are permanently banned.\n(Error Code: 267)"
+    message.Size = UDim2.new(0.9, 0, 0.45, 0)
+    message.Position = UDim2.new(0.05, 0.3, 0)
+    message.TextColor3 = Color3.fromRGB(230, 230, 230)
+    message.TextScaled = true
+    message.Font = Enum.Font.SourceSans
+    message.TextWrapped = true
+    message.BackgroundTransparency = 1
 
-	local message = Instance.new("TextLabel", box)
-	message.Text = "You were kicked from this experience:\nYou are permanently banned.\n(Error Code: 267)"
-	message.Size = UDim2.new(0.9, 0, 0.4, 0)
-	message.Position = UDim2.new(0.05, 0.3, 0)
-	message.TextColor3 = Color3.fromRGB(230, 230, 230)
-	message.TextScaled = true
-	message.TextWrapped = true
-	message.Font = Enum.Font.SourceSans
-	message.BackgroundTransparency = 1
+    local button = Instance.new("TextButton", box)
+    button.Text = "Leave"
+    button.Size = UDim2.new(0, 150, 0, 40)
+    button.Position = UDim2.new(0.5, -75, 0.8, 0)
+    button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextColor3 = Color3.fromRGB(0, 0, 0)
+    button.TextScaled = true
+    button.Font = Enum.Font.SourceSansBold
 
-	local button = Instance.new("TextButton", box)
-	button.Text = "Leave"
-	button.Size = UDim2.new(0, 150, 0, 40)
-	button.Position = UDim2.new(0.5, -75, 0.8, 0)
-	button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	button.TextColor3 = Color3.fromRGB(0, 0, 0)
-	button.TextScaled = true
-	button.Font = Enum.Font.SourceSansBold
-
-	button.MouseButton1Click:Connect(function()
-		game:Shutdown()
-	end)
-end)
+    button.MouseButton1Click:Connect(function()
+        game:Shutdown()
+    end)
+end
