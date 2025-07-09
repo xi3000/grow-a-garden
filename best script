@@ -1,0 +1,78 @@
+-- Advanced Fake Ban Script (Client-side only)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+-- ✅ Create Fake Ban GUI
+local function showFakeBan(reason)
+	local ScreenGui = Instance.new("ScreenGui")
+	local Frame = Instance.new("Frame")
+	local Title = Instance.new("TextLabel")
+	local Reason = Instance.new("TextLabel")
+	local Close = Instance.new("TextButton")
+
+	ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+	ScreenGui.Name = "FakeBanUI"
+
+	Frame.Parent = ScreenGui
+	Frame.Size = UDim2.new(0.5, 0, 0.3, 0)
+	Frame.Position = UDim2.new(0.25, 0, 0.35, 0)
+	Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	Frame.BorderSizePixel = 2
+
+	Title.Parent = Frame
+	Title.Text = "⚠️ You have been BANNED"
+	Title.Size = UDim2.new(1, 0, 0.3, 0)
+	Title.TextColor3 = Color3.fromRGB(255, 70, 70)
+	Title.TextScaled = true
+	Title.BackgroundTransparency = 1
+	Title.Font = Enum.Font.GothamBold
+
+	Reason.Parent = Frame
+	Reason.Text = "Reason: " .. reason .. "\nIf you believe this is a mistake, please contact support."
+	Reason.Size = UDim2.new(1, 0, 0.5, 0)
+	Reason.Position = UDim2.new(0, 0, 0.3, 0)
+	Reason.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Reason.TextWrapped = true
+	Reason.TextScaled = true
+	Reason.Font = Enum.Font.Gotham
+
+	Close.Parent = Frame
+	Close.Text = "Exit Game"
+	Close.Size = UDim2.new(0.4, 0, 0.2, 0)
+	Close.Position = UDim2.new(0.3, 0, 0.8, 0)
+	Close.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+	Close.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Close.Font = Enum.Font.GothamBold
+	Close.TextScaled = true
+
+	Close.MouseButton1Click:Connect(function()
+		game:Shutdown() -- Fake shutdown to make it look real
+	end)
+end
+
+-- ✅ Detect suspicious environment or exploit tools
+local suspicious = false
+
+-- Detect exploit tools (basic check)
+if identifyexecutor or is_sirhurt_closure or is_synapse_function then
+	suspicious = true
+end
+
+-- Detect Roblox Studio or unloaded game
+if RunService:IsStudio() or not game:IsLoaded() then
+	suspicious = true
+end
+
+-- Fake emulator or unofficial platform detection
+local platform = UserSettings():GetService("UserGameSettings").ComputerCameraMovementMode
+if typeof(platform) ~= "EnumItem" then
+	suspicious = true
+end
+
+-- If suspicious environment is detected → show fake ban
+if suspicious then
+	task.wait(3) -- Delay for effect
+	showFakeBan("Unauthorized environment detected (Modded/Exploit/UWP)")
+end
